@@ -18,6 +18,7 @@ from repositories.cart import CartRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
+from utils.translation_helper import get_translated
 from services.notification import NotificationService
 from utils.localizator import Localizator
 
@@ -137,7 +138,7 @@ class UserService:
             item = await ItemRepository.get_by_id(buy_item.item_id, session)
             subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_item").format(
-                subcategory_name=subcategory.name,
+                subcategory_name=get_translated(subcategory.name, subcategory.name_translations),
                 total_price=buy.total_price,
                 quantity=buy.quantity,
                 currency_sym=Localizator.get_currency_symbol()),

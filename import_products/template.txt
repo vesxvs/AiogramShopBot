@@ -1,0 +1,2 @@
+Category#1|de:Kategorie#1;Subcategory#1|de:Unterkategorie#1;Description#1|de:Beschreibung#1;50.0;PRIVATE_DATA#1
+Category#1|de:Kategorie#1;Subcategory#1|de:Unterkategorie#1;Description#2|de:Beschreibung#2;50.0;PRIVATE_DATA#2

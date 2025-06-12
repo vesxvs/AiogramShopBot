@@ -26,6 +26,10 @@ class Localizator:
         _language_var.set(language)
 
     @staticmethod
+    def get_language() -> str:
+        return _language_var.get()
+
+    @staticmethod
     def get_currency_symbol():
         return Localizator.get_text(BotEntity.COMMON, f"{config.CURRENCY.value.lower()}_symbol")
 

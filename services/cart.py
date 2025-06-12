@@ -21,6 +21,7 @@ from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
 from utils.localizator import Localizator
+from utils.translation_helper import get_translated
 
 
 class CartService:
@@ -50,7 +51,7 @@ class CartService:
             price = await ItemRepository.get_price(item_dto, session)
             subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "cart_item_button").format(
-                subcategory_name=subcategory.name,
+                subcategory_name=get_translated(subcategory.name, subcategory.name_translations),
                 qty=cart_item.quantity,
                 total_price=cart_item.quantity * price,
                 currency_sym=Localizator.get_currency_symbol()),
@@ -97,7 +98,7 @@ class CartService:
             subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
             line_item_total = price * cart_item.quantity
             cart_line_item = Localizator.get_text(BotEntity.USER, "cart_item_button").format(
-                subcategory_name=subcategory.name, qty=cart_item.quantity,
+                subcategory_name=get_translated(subcategory.name, subcategory.name_translations), qty=cart_item.quantity,
                 total_price=line_item_total, currency_sym=Localizator.get_currency_symbol()
             )
             cart_grand_total += line_item_total
@@ -170,5 +171,5 @@ class CartService:
             msg = Localizator.get_text(BotEntity.USER, "out_of_stock")
             for item in out_of_stock:
                 subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
-                msg += subcategory.name + "\n"
+                msg += get_translated(subcategory.name, subcategory.name_translations) + "\n"
             return msg, kb_builder

@@ -1,0 +1,16 @@
+[
+  {
+    "category": {"en": "Category#1", "de": "Kategorie#1"},
+    "subcategory": {"en": "Subcategory#1", "de": "Unterkategorie#1"},
+    "price": 50,
+    "description": {"en": "Mocked description", "de": "Beispielbeschreibung"},
+    "private_data": "Mocked private data"
+  },
+  {
+    "category": {"en": "Category#2"},
+    "subcategory": {"en": "Subcategory#2"},
+    "price": 100,
+    "description": {"en": "Another description"},
+    "private_data": "Another private data"
+  }
+]

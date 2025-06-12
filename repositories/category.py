@@ -56,14 +56,22 @@ class CategoryRepository:
                 categories.scalars().all()]
 
     @staticmethod
-    async def get_or_create(category_name: str, session: Session | AsyncSession):
+    async def get_or_create(category_data: dict | str, session: Session | AsyncSession):
+        if isinstance(category_data, dict):
+            category_name = category_data.get("en")
+            translations = {k: v for k, v in category_data.items() if k != "en"}
+        else:
+            category_name = category_data
+            translations = {}
         stmt = select(Category).where(Category.name == category_name)
         category = await session_execute(stmt, session)
         category = category.scalar()
         if category is None:
-            new_category_obj = Category(name=category_name)
+            new_category_obj = Category(name=category_name, name_translations=translations)
             session.add(new_category_obj)
             await session_flush(session)
             return new_category_obj
         else:
+            if translations:
+                category.name_translations.update(translations)
             return category
