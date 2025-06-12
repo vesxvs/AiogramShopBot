@@ -28,6 +28,7 @@ from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
 from db import session_commit
 from callbacks import LanguageCallback
+from callbacks import LanguageCallback, CurrencyCallback
 from enums.currency import Currency
 
 logging.basicConfig(level=logging.INFO)
