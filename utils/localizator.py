@@ -5,6 +5,7 @@ from enums.bot_entity import BotEntity
 
 
 _language_var = contextvars.ContextVar("language", default=config.BOT_LANGUAGE)
+_currency_var = contextvars.ContextVar("currency", default=config.CURRENCY.value)
 
 
 class Localizator:
@@ -30,9 +31,29 @@ class Localizator:
         return _language_var.get()
 
     @staticmethod
-    def get_currency_symbol():
-        return Localizator.get_text(BotEntity.COMMON, f"{config.CURRENCY.value.lower()}_symbol")
+    def set_currency(currency: str) -> None:
+        _currency_var.set(currency)
 
     @staticmethod
-    def get_currency_text():
-        return Localizator.get_text(BotEntity.COMMON, f"{config.CURRENCY.value.lower()}_text")
+    def get_currency() -> str:
+        return _currency_var.get()
+
+    @staticmethod
+    def get_currency_symbol(currency: str | None = None):
+        if currency is None:
+            currency = Localizator.get_currency()
+        symbols = Localizator.get_text(BotEntity.COMMON, "currency_symbols")
+        return symbols.get(currency, currency)
+
+    @staticmethod
+    def get_currency_text(currency: str | None = None):
+        if currency is None:
+            currency = Localizator.get_currency()
+        names = Localizator.get_text(BotEntity.COMMON, "currency_names")
+        return names.get(currency, currency)
+
+    @staticmethod
+    def get_currency_list_text() -> str:
+        names = Localizator.get_text(BotEntity.COMMON, "currency_names")
+        lines = [f"{code} - {name}{' *' if code in Localizator.get_text(BotEntity.COMMON, 'not_amex') else ''}" for code, name in names.items()]
+        return "\n".join(lines)

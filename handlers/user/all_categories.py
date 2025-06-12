@@ -14,7 +14,7 @@ from utils.localizator import Localizator
 all_categories_router = Router()
 
 
-@all_categories_router.message(F.text == Localizator.get_text(BotEntity.USER, "all_categories"),
+@all_categories_router.message(lambda message: message.text == Localizator.get_text(BotEntity.USER, "all_categories"),
                                IsUserExistFilter())
 async def all_categories_text_message(message: types.message, session: AsyncSession | Session):
     await all_categories(callback=message, session=session)

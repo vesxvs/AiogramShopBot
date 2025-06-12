@@ -15,7 +15,8 @@ from utils.localizator import Localizator
 my_profile_router = Router()
 
 
-@my_profile_router.message(F.text == Localizator.get_text(BotEntity.USER, "my_profile"), IsUserExistFilter())
+@my_profile_router.message(lambda message: message.text == Localizator.get_text(BotEntity.USER, "my_profile"),
+                           IsUserExistFilter())
 async def my_profile_text_message(message: types.message, session: Session | AsyncSession):
     await my_profile(message=message, session=session)
 
@@ -38,12 +39,6 @@ async def my_profile(**kwargs):
         await callback.message.edit_text(msg_text, reply_markup=kb_builder.as_markup())
 
 
-async def top_up_balance(**kwargs):
-    callback = kwargs.get("callback")
-    msg_text, kb_builder = await UserService.get_top_up_buttons(callback)
-    await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
-
-
 async def purchase_history(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
@@ -51,18 +46,6 @@ async def purchase_history(**kwargs):
     await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
 
 
-async def refresh_balance(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg, response = await UserService.refresh_balance(callback, session)
-    match response:
-        case UserResponse.BALANCE_REFRESHED:
-            await callback.answer(msg, show_alert=True)
-            await my_profile(message=callback, session=session)
-        case UserResponse.BALANCE_NOT_REFRESHED:
-            await callback.answer(msg, show_alert=True)
-        case UserResponse.BALANCE_REFRESH_COOLDOWN:
-            await callback.answer(msg, show_alert=True)
 
 
 async def get_order_from_history(**kwargs):
@@ -72,11 +55,6 @@ async def get_order_from_history(**kwargs):
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-async def top_up_by_method(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg, kb_builder = await UserService.get_top_up_by_msg(callback, session)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
@@ -85,11 +63,8 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, se
 
     levels = {
         0: my_profile,
-        1: top_up_balance,
-        2: top_up_by_method,
-        3: refresh_balance,
-        4: purchase_history,
-        5: get_order_from_history
+        1: purchase_history,
+        2: get_order_from_history
     }
 
     current_level_function = levels[current_level]
