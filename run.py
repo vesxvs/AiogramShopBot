@@ -27,11 +27,26 @@ from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
 from db import session_commit
+from callbacks import LanguageCallback
 from callbacks import LanguageCallback, CurrencyCallback
 from enums.currency import Currency
 
 logging.basicConfig(level=logging.INFO)
 main_router = Router()
+
+
+def get_currency_keyboard() -> types.ReplyKeyboardMarkup:
+    buttons = [types.KeyboardButton(text=c.value) for c in Currency]
+    keyboard: list[list[types.KeyboardButton]] = []
+    row: list[types.KeyboardButton] = []
+    for i, button in enumerate(buttons, 1):
+        row.append(button)
+        if i % 4 == 0:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+    return types.ReplyKeyboardMarkup(resize_keyboard=True, keyboard=keyboard)
 
 
 def get_main_menu(telegram_id: int) -> types.ReplyKeyboardMarkup:
@@ -68,8 +83,13 @@ async def set_language(callback: types.CallbackQuery, callback_data: LanguageCal
     await session_commit(session)
     Localizator.set_language(callback_data.code)
     currency_list = Localizator.get_currency_list_text()
-    msg = Localizator.get_text(BotEntity.COMMON, "choose_currency").format(default_currency=config.CURRENCY.value)
-    await callback.message.edit_text(f"{msg}\n{currency_list}")
+    msg = Localizator.get_text(BotEntity.COMMON, "choose_currency").format(
+        default_currency=config.CURRENCY.value
+    )
+    await callback.message.delete()
+    await callback.message.answer(
+        f"{msg}\n{currency_list}", reply_markup=get_currency_keyboard()
+    )
 
 
 @main_router.message(lambda message: message.text in [c.value for c in Currency])
