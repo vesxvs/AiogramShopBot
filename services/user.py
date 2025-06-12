@@ -29,6 +29,8 @@ class UserService:
         user = await UserRepository.get_by_tgid(user_dto.telegram_id, session)
         match user:
             case None:
+                if user_dto.language is None:
+                    user_dto.language = "en"
                 user_id = await UserRepository.create(user_dto, session)
                 await CartRepository.get_or_create(user_id, session)
                 await session_commit(session)

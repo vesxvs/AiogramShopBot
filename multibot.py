@@ -18,6 +18,8 @@ from aiogram.webhook.aiohttp_server import (
 )
 from db import create_db_and_tables
 from utils.custom_filters import AdminIdFilter
+from enums.bot_entity import BotEntity
+from utils.localizator import Localizator
 
 main_router_multibot = Router()
 
@@ -46,10 +48,10 @@ async def command_add_bot(message: Message, command: CommandObject, bot: Bot) ->
     try:
         bot_user = await new_bot.get_me()
     except TelegramUnauthorizedError:
-        return message.answer("Invalid token")
+        return message.answer(Localizator.get_text(BotEntity.COMMON, "invalid_token"))
     await new_bot.delete_webhook(drop_pending_updates=True)
     await new_bot.set_webhook(OTHER_BOTS_URL.format(bot_token=command.args))
-    return await message.answer(f"Bot @{bot_user.username} successful added")
+    return await message.answer(Localizator.get_text(BotEntity.COMMON, "bot_added").format(username=bot_user.username))
 
 
 async def on_startup(dispatcher: Dispatcher, bot: Bot):
@@ -57,7 +59,7 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
     await create_db_and_tables()
     for admin in config.ADMIN_ID_LIST:
         try:
-            await bot.send_message(admin, 'Bot is working')
+            await bot.send_message(admin, Localizator.get_text(BotEntity.COMMON, "bot_working"))
         except Exception as e:
             logging.warning(e)
 
