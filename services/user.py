@@ -4,6 +4,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+import config
 from callbacks import MyProfileCallback
 from crypto_api.CryptoApiManager import CryptoApiManager
 from db import session_commit
@@ -32,6 +33,8 @@ class UserService:
             case None:
                 if user_dto.language is None:
                     user_dto.language = "en"
+                if user_dto.currency is None:
+                    user_dto.currency = config.CURRENCY.value
                 user_id = await UserRepository.create(user_dto, session)
                 await CartRepository.get_or_create(user_id, session)
                 await session_commit(session)
@@ -47,45 +50,13 @@ class UserService:
         return await UserRepository.get_by_tgid(user_dto.telegram_id, session)
 
     @staticmethod
-    async def refresh_balance(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, UserResponse]:
-        user_dto = UserDTO.model_validate(await UserRepository.get_by_tgid(callback.from_user.id, session),
-                                          from_attributes=True)
-        cryptocurrency = Cryptocurrency(MyProfileCallback.unpack(callback.data).args_for_action)
-        now_time = datetime.now()
-        if user_dto.last_balance_refresh is None or (
-                user_dto.last_balance_refresh is not None and (
-                now_time - user_dto.last_balance_refresh).total_seconds() > 30):
-            user_dto.last_balance_refresh = now_time
-            await UserRepository.update(user_dto, session)
-            await session_commit(session)
-            deposits_amount = await CryptoApiManager.get_new_deposits_amount(user_dto, cryptocurrency, session)
-            if deposits_amount > 0:
-                crypto_price = await CryptoApiManager.get_crypto_prices(cryptocurrency)
-                fiat_amount = deposits_amount * crypto_price
-                new_crypto_balance = getattr(user_dto, cryptocurrency.get_balance_field()) + deposits_amount
-                setattr(user_dto, cryptocurrency.get_balance_field(), new_crypto_balance)
-                user_dto.top_up_amount = user_dto.top_up_amount + fiat_amount
-                await UserRepository.update(user_dto, session)
-                await session_commit(session)
-                await NotificationService.new_deposit(deposits_amount, cryptocurrency, fiat_amount, user_dto)
-                return (Localizator.get_text(BotEntity.USER, "balance_refreshed_successfully"),
-                        UserResponse.BALANCE_REFRESHED)
-            else:
-                return (Localizator.get_text(BotEntity.USER, "balance_not_refreshed"),
-                        UserResponse.BALANCE_NOT_REFRESHED)
-        else:
-            return (Localizator.get_text(BotEntity.USER, "balance_refresh_timeout"),
-                    UserResponse.BALANCE_REFRESH_COOLDOWN)
 
     @staticmethod
     async def get_my_profile_buttons(user_dto: UserDTO, session: Session | AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "top_up_balance_button"),
-                          callback_data=MyProfileCallback.create(1, "top_up"))
         kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_button"),
-                          callback_data=MyProfileCallback.create(4, "purchase_history"))
+                          callback_data=MyProfileCallback.create(1, "purchase_history"))
         user = await UserService.get(user_dto, session)
-        fiat_balance = round(user.top_up_amount - user.consume_records, 2)
         message = (Localizator.get_text(BotEntity.USER, "my_profile_msg")
                    .format(telegram_id=user.telegram_id,
                            btc_balance=user.btc_balance,
@@ -94,37 +65,11 @@ class UserService:
                            usdt_trc20_balance=user.usdt_trc20_balance,
                            usdt_erc20_balance=user.usdt_erc20_balance,
                            usdc_erc20_balance=user.usdc_erc20_balance,
-                           fiat_balance=fiat_balance,
+                           fiat_balance=0.0,
                            currency_text=Localizator.get_currency_text(),
                            currency_sym=Localizator.get_currency_symbol()))
         return message, kb_builder
 
-    @staticmethod
-    async def get_top_up_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
-        unpacked_cb = MyProfileCallback.unpack(callback.data)
-        kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "btc_top_up"),
-                          callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
-                                                                 args_for_action=Cryptocurrency.BTC.value))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "ltc_top_up"),
-                          callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
-                                                                 args_for_action=Cryptocurrency.LTC.value))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "sol_top_up"),
-                          callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
-                                                                 args_for_action=Cryptocurrency.SOL.value))
-        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "usdt_trc20_top_up"),
-                          callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
-                                                                 args_for_action=Cryptocurrency.USDT_TRC20.value))
-        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "usdt_erc20_top_up"),
-                          callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
-                                                                 args_for_action=Cryptocurrency.USDT_ERC20.value))
-        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "usdc_erc20_top_up"),
-                          callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
-                                                                 args_for_action=Cryptocurrency.USDC_ERC20.value))
-        kb_builder.adjust(1)
-        kb_builder.row(unpacked_cb.get_back_button())
-        msg_text = Localizator.get_text(BotEntity.USER, "choose_top_up_method")
-        return msg_text, kb_builder
 
     @staticmethod
     async def get_purchase_history_buttons(callback: CallbackQuery, session: AsyncSession | Session) \
@@ -156,19 +101,3 @@ class UserService:
             return Localizator.get_text(BotEntity.USER, "no_purchases"), kb_builder
 
     @staticmethod
-    async def get_top_up_by_msg(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
-        unpacked_cb = MyProfileCallback.unpack(callback.data)
-        payment_method = Cryptocurrency(unpacked_cb.args_for_action)
-        user = await UserService.get(UserDTO(telegram_id=callback.from_user.id), session)
-        addr = getattr(user, payment_method.get_address_field())
-        bot = await callback.bot.get_me()
-        msg = Localizator.get_text(BotEntity.USER, "top_up_balance_msg").format(
-            bot_name=bot.first_name,
-            crypto_name=payment_method.value.replace('_', ' '),
-            addr=addr)
-        kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "refresh_balance_button"),
-                          callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
-                                                                 args_for_action=payment_method.value))
-        kb_builder.row(unpacked_cb.get_back_button())
-        return msg, kb_builder
