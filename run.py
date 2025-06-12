@@ -66,6 +66,7 @@ async def set_language(callback: types.CallbackQuery, callback_data: LanguageCal
     ), session)
     await UserRepository.update(UserDTO(telegram_id=telegram_id, language=callback_data.code), session)
     await session_commit(session)
+    Localizator.set_language(callback_data.code)
     currency_list = Localizator.get_currency_list_text()
     msg = Localizator.get_text(BotEntity.COMMON, "choose_currency").format(default_currency=config.CURRENCY.value)
     await callback.message.edit_text(f"{msg}\n{currency_list}")
@@ -76,6 +77,7 @@ async def set_currency(message: types.Message, session: AsyncSession | Session):
     currency_code = message.text
     await UserRepository.update(UserDTO(telegram_id=message.from_user.id, currency=currency_code), session)
     await session_commit(session)
+    Localizator.set_currency(currency_code)
     start_markup = get_main_menu(message.from_user.id)
     await message.answer(Localizator.get_text(BotEntity.COMMON, "start_message"), reply_markup=start_markup)
 
@@ -91,12 +93,14 @@ async def cmd_help(message: types.Message, session: AsyncSession | Session):
     await message.answer(Localizator.get_text(BotEntity.COMMON, "start_message"), reply_markup=start_markup)
 
 
-@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "faq"), IsUserExistFilter())
+@main_router.message(lambda message: message.text == Localizator.get_text(BotEntity.USER, "faq"),
+                     IsUserExistFilter())
 async def faq(message: types.message):
     await message.answer(Localizator.get_text(BotEntity.USER, "faq_string"))
 
 
-@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "help"), IsUserExistFilter())
+@main_router.message(lambda message: message.text == Localizator.get_text(BotEntity.USER, "help"),
+                     IsUserExistFilter())
 async def support(message: types.message):
     admin_keyboard_builder = InlineKeyboardBuilder()
 

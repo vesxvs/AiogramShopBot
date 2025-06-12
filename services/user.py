@@ -64,10 +64,7 @@ class UserService:
                            sol_balance=user.sol_balance,
                            usdt_trc20_balance=user.usdt_trc20_balance,
                            usdt_erc20_balance=user.usdt_erc20_balance,
-                           usdc_erc20_balance=user.usdc_erc20_balance,
-                           fiat_balance=0.0,
-                           currency_text=Localizator.get_currency_text(),
-                           currency_sym=Localizator.get_currency_symbol()))
+                           usdc_erc20_balance=user.usdc_erc20_balance))
         return message, kb_builder
 
 

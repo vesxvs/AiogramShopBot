@@ -15,7 +15,8 @@ from utils.localizator import Localizator
 my_profile_router = Router()
 
 
-@my_profile_router.message(F.text == Localizator.get_text(BotEntity.USER, "my_profile"), IsUserExistFilter())
+@my_profile_router.message(lambda message: message.text == Localizator.get_text(BotEntity.USER, "my_profile"),
+                           IsUserExistFilter())
 async def my_profile_text_message(message: types.message, session: Session | AsyncSession):
     await my_profile(message=message, session=session)
 
