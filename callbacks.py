@@ -173,3 +173,11 @@ class LanguageCallback(BaseCallback, prefix="lang"):
     @staticmethod
     def create(code: str) -> "LanguageCallback":
         return LanguageCallback(level=0, code=code)
+
+
+class CurrencyCallback(BaseCallback, prefix="cur"):
+    code: str
+
+    @staticmethod
+    def create(code: str) -> "CurrencyCallback":
+        return CurrencyCallback(level=0, code=code)

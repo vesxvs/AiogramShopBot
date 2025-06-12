@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint
+import config
 
 from models.base import Base
 
@@ -13,6 +14,7 @@ class User(Base):
     telegram_username = Column(String, unique=True)
     telegram_id = Column(Integer, nullable=False, unique=True)
     language = Column(String, nullable=False, default="en")
+    currency = Column(String, nullable=False, default=config.CURRENCY.value)
     btc_address = Column(String, nullable=False, unique=True)
     ltc_address = Column(String, nullable=False, unique=True)
     trx_address = Column(String, nullable=False, unique=True)
@@ -48,6 +50,7 @@ class UserDTO(BaseModel):
     telegram_username: str | None = None
     telegram_id: int | None = None
     language: str | None = None
+    currency: str | None = None
     btc_address: str | None = None
     ltc_address: str | None = None
     trx_address: str | None = None
