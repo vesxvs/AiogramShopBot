@@ -99,5 +99,3 @@ class UserService:
             return Localizator.get_text(BotEntity.USER, "purchases"), kb_builder
         else:
             return Localizator.get_text(BotEntity.USER, "no_purchases"), kb_builder
-
-    @staticmethod
