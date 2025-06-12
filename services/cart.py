@@ -43,7 +43,7 @@ class CartService:
     async def create_buttons(message: Message | CallbackQuery, session: AsyncSession | Session):
         user = await UserRepository.get_by_tgid(message.from_user.id, session)
         page = 0 if isinstance(message, Message) else CartCallback.unpack(message.data).page
-        cart_items = await CartItemRepository.get_by_user_id(user.id, 0, session)
+        cart_items = await CartItemRepository.get_by_user_id(user.id, page, session)
         kb_builder = InlineKeyboardBuilder()
         for cart_item in cart_items:
             item_dto = ItemDTO(category_id=cart_item.category_id, subcategory_id=cart_item.subcategory_id)
