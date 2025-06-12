@@ -165,3 +165,11 @@ class WalletCallback(BaseCallback, prefix="wallet"):
     @staticmethod
     def create(level: int):
         return WalletCallback(level=level)
+
+
+class LanguageCallback(BaseCallback, prefix="lang"):
+    code: str
+
+    @staticmethod
+    def create(code: str) -> "LanguageCallback":
+        return LanguageCallback(level=0, code=code)

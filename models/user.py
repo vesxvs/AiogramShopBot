@@ -12,6 +12,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     telegram_username = Column(String, unique=True)
     telegram_id = Column(Integer, nullable=False, unique=True)
+    language = Column(String, nullable=False, default="en")
     btc_address = Column(String, nullable=False, unique=True)
     ltc_address = Column(String, nullable=False, unique=True)
     trx_address = Column(String, nullable=False, unique=True)
@@ -46,6 +47,7 @@ class UserDTO(BaseModel):
     id: int | None = None
     telegram_username: str | None = None
     telegram_id: int | None = None
+    language: str | None = None
     btc_address: str | None = None
     ltc_address: str | None = None
     trx_address: str | None = None

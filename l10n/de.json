@@ -95,7 +95,12 @@
     "cad_symbol": "C$",
     "cad_text": "CAD",
     "gbp_symbol": "£",
-    "gbp_text": "GBP"
+    "gbp_text": "GBP",
+    "choose_language": "Wybierz język / Choose your language",
+    "oops": "Ups, etwas ist schiefgelaufen!",
+    "bot_working": "Bot funktioniert",
+    "invalid_token": "Ungültiges Token",
+    "bot_added": "Bot @{username} erfolgreich hinzugefügt"
   },
   "user": {
     "all_categories": "🗂️ Alle Kategorien",

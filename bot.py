@@ -13,6 +13,8 @@ from db import create_db_and_tables
 import uvicorn
 from fastapi.responses import JSONResponse
 from services.notification import NotificationService
+from enums.bot_entity import BotEntity
+from utils.localizator import Localizator
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -44,7 +46,7 @@ async def on_startup():
     )
     for admin in config.ADMIN_ID_LIST:
         try:
-            await bot.send_message(admin, 'Bot is working')
+            await bot.send_message(admin, Localizator.get_text(BotEntity.COMMON, "bot_working"))
         except Exception as e:
             logging.warning(e)
 
