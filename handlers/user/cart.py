@@ -14,7 +14,8 @@ from utils.localizator import Localizator
 cart_router = Router()
 
 
-@cart_router.message(F.text == Localizator.get_text(BotEntity.USER, "cart"), IsUserExistFilter())
+@cart_router.message(lambda message: message.text == Localizator.get_text(BotEntity.USER, "cart"),
+                     IsUserExistFilter())
 async def cart_text_message(message: types.message, session: AsyncSession | Session):
     await show_cart(message=message, session=session)
 

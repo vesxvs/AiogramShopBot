@@ -22,7 +22,8 @@ admin_router.include_router(statistics)
 admin_router.include_router(wallet)
 
 
-@admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
+@admin_router.message(lambda message: message.text == Localizator.get_text(BotEntity.ADMIN, "menu"),
+                      AdminIdFilter())
 async def admin_command_handler(message: types.message):
     await admin(message=message)
 

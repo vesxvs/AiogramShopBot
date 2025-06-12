@@ -28,9 +28,24 @@ from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
 from db import session_commit
 from callbacks import LanguageCallback
+from enums.currency import Currency
 
 logging.basicConfig(level=logging.INFO)
 main_router = Router()
+
+
+def get_currency_keyboard() -> types.ReplyKeyboardMarkup:
+    buttons = [types.KeyboardButton(text=c.value) for c in Currency]
+    keyboard: list[list[types.KeyboardButton]] = []
+    row: list[types.KeyboardButton] = []
+    for i, button in enumerate(buttons, 1):
+        row.append(button)
+        if i % 4 == 0:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+    return types.ReplyKeyboardMarkup(resize_keyboard=True, keyboard=keyboard)
 
 
 def get_main_menu(telegram_id: int) -> types.ReplyKeyboardMarkup:
@@ -65,8 +80,25 @@ async def set_language(callback: types.CallbackQuery, callback_data: LanguageCal
     ), session)
     await UserRepository.update(UserDTO(telegram_id=telegram_id, language=callback_data.code), session)
     await session_commit(session)
-    start_markup = get_main_menu(telegram_id)
-    await callback.message.edit_text(Localizator.get_text(BotEntity.COMMON, "start_message"), reply_markup=start_markup)
+    Localizator.set_language(callback_data.code)
+    currency_list = Localizator.get_currency_list_text()
+    msg = Localizator.get_text(BotEntity.COMMON, "choose_currency").format(
+        default_currency=config.CURRENCY.value
+    )
+    await callback.message.delete()
+    await callback.message.answer(
+        f"{msg}\n{currency_list}", reply_markup=get_currency_keyboard()
+    )
+
+
+@main_router.message(lambda message: message.text in [c.value for c in Currency])
+async def set_currency(message: types.Message, session: AsyncSession | Session):
+    currency_code = message.text
+    await UserRepository.update(UserDTO(telegram_id=message.from_user.id, currency=currency_code), session)
+    await session_commit(session)
+    Localizator.set_currency(currency_code)
+    start_markup = get_main_menu(message.from_user.id)
+    await message.answer(Localizator.get_text(BotEntity.COMMON, "start_message"), reply_markup=start_markup)
 
 
 @main_router.message(Command(commands=["help"]))
@@ -80,12 +112,14 @@ async def cmd_help(message: types.Message, session: AsyncSession | Session):
     await message.answer(Localizator.get_text(BotEntity.COMMON, "start_message"), reply_markup=start_markup)
 
 
-@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "faq"), IsUserExistFilter())
+@main_router.message(lambda message: message.text == Localizator.get_text(BotEntity.USER, "faq"),
+                     IsUserExistFilter())
 async def faq(message: types.message):
     await message.answer(Localizator.get_text(BotEntity.USER, "faq_string"))
 
 
-@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "help"), IsUserExistFilter())
+@main_router.message(lambda message: message.text == Localizator.get_text(BotEntity.USER, "help"),
+                     IsUserExistFilter())
 async def support(message: types.message):
     admin_keyboard_builder = InlineKeyboardBuilder()
 
