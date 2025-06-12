@@ -45,6 +45,15 @@ class SubcategoryRepository:
         return SubcategoryDTO.model_validate(subcategory.scalar(), from_attributes=True)
 
     @staticmethod
+    async def get_by_name(name: str, session: Session | AsyncSession) -> SubcategoryDTO | None:
+        stmt = select(Subcategory).where(Subcategory.name == name)
+        result = await session_execute(stmt, session)
+        subcategory = result.scalar()
+        if subcategory:
+            return SubcategoryDTO.model_validate(subcategory, from_attributes=True)
+        return None
+
+    @staticmethod
     async def get_to_delete(page: int, session: Session | AsyncSession) -> list[SubcategoryDTO]:
         stmt = select(Subcategory).join(Item,
                                         Item.subcategory_id == Subcategory.id).where(
@@ -71,15 +80,23 @@ class SubcategoryRepository:
             return math.trunc(max_page / config.PAGE_ENTRIES)
 
     @staticmethod
-    async def get_or_create(subcategory_name: str, session: Session | AsyncSession):
-        stmt = select(Subcategory).where(Subcategory.name == subcategory_name)
+    async def get_or_create(subcategory_data: dict | str, session: Session | AsyncSession):
+        if isinstance(subcategory_data, dict):
+            sub_name = subcategory_data.get("en")
+            translations = {k: v for k, v in subcategory_data.items() if k != "en"}
+        else:
+            sub_name = subcategory_data
+            translations = {}
+        stmt = select(Subcategory).where(Subcategory.name == sub_name)
         subcategory = await session_execute(stmt, session)
         subcategory = subcategory.scalar()
         if subcategory is None:
-            new_category_obj = Subcategory(name=subcategory_name)
-            session.add(new_category_obj)
+            new_obj = Subcategory(name=sub_name, name_translations=translations)
+            session.add(new_obj)
             await session_flush(session)
-            return new_category_obj
+            return new_obj
         else:
+            if translations:
+                subcategory.name_translations.update(translations)
             return subcategory
 

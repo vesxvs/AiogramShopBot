@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, CheckConstraint, JSON
 from sqlalchemy.orm import relationship, backref
 
 from models.base import Base
@@ -23,6 +23,7 @@ class Item(Base):
     is_sold = Column(Boolean, nullable=False, default=False)
     is_new = Column(Boolean, nullable=False, default=True)
     description = Column(String, nullable=False)
+    description_translations = Column(JSON, nullable=False, default={})
 
     __table_args__ = (
         CheckConstraint('price > 0', name='check_price_positive'),
@@ -38,3 +39,4 @@ class ItemDTO(BaseModel):
     is_sold: bool | None = None
     is_new: bool | None = None
     description: str | None = None
+    description_translations: dict | None = None

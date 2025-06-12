@@ -23,6 +23,7 @@ from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from utils.localizator import Localizator
+from utils.translation_helper import get_translated
 
 
 class AdminService:
@@ -103,7 +104,7 @@ class AdminService:
         match unpacked_cb.entity_type:
             case EntityType.CATEGORY:
                 categories = await CategoryRepository.get_to_delete(unpacked_cb.page, session)
-                [kb_builder.button(text=category.name, callback_data=AdminInventoryManagementCallback.create(
+                [kb_builder.button(text=get_translated(category.name, category.name_translations), callback_data=AdminInventoryManagementCallback.create(
                     level=3,
                     entity_type=unpacked_cb.entity_type,
                     entity_id=category.id
@@ -115,7 +116,7 @@ class AdminService:
                 return Localizator.get_text(BotEntity.ADMIN, "delete_category"), kb_builder
             case EntityType.SUBCATEGORY:
                 subcategories = await SubcategoryRepository.get_to_delete(unpacked_cb.page, session)
-                [kb_builder.button(text=subcategory.name, callback_data=AdminInventoryManagementCallback.create(
+                [kb_builder.button(text=get_translated(subcategory.name, subcategory.name_translations), callback_data=AdminInventoryManagementCallback.create(
                     level=3,
                     entity_type=unpacked_cb.entity_type,
                     entity_id=subcategory.id
@@ -140,13 +141,13 @@ class AdminService:
                 category = await CategoryRepository.get_by_id(unpacked_cb.entity_id, session)
                 return Localizator.get_text(BotEntity.ADMIN, "delete_entity_confirmation").format(
                     entity=unpacked_cb.entity_type.name.capitalize(),
-                    entity_name=category.name
+                    entity_name=get_translated(category.name, category.name_translations)
                 ), kb_builder
             case EntityType.SUBCATEGORY:
                 subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.entity_id, session)
                 return Localizator.get_text(BotEntity.ADMIN, "delete_entity_confirmation").format(
                     entity=unpacked_cb.entity_type.name.capitalize(),
-                    entity_name=subcategory.name
+                    entity_name=get_translated(subcategory.name, subcategory.name_translations)
                 ), kb_builder
 
     @staticmethod
@@ -160,14 +161,14 @@ class AdminService:
                 await ItemRepository.delete_unsold_by_category_id(unpacked_cb.entity_id, session)
                 await session_commit(session)
                 return Localizator.get_text(BotEntity.ADMIN, "successfully_deleted").format(
-                    entity_name=category.name,
+                    entity_name=get_translated(category.name, category.name_translations),
                     entity_to_delete=unpacked_cb.entity_type.name.capitalize()), kb_builder
             case EntityType.SUBCATEGORY:
                 subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.entity_id, session)
                 await ItemRepository.delete_unsold_by_subcategory_id(unpacked_cb.entity_id, session)
                 await session_commit(session)
                 return Localizator.get_text(BotEntity.ADMIN, "successfully_deleted").format(
-                    entity_name=subcategory.name,
+                    entity_name=get_translated(subcategory.name, subcategory.name_translations),
                     entity_to_delete=unpacked_cb.entity_type.name.capitalize()), kb_builder
 
     @staticmethod
@@ -270,18 +271,20 @@ class AdminService:
                 unpacked_cb.level + 1,
                 UserManagementOperation.REFUND,
                 buy_id=refund_item.buy_id)
+            subcat = await SubcategoryRepository.get_by_name(refund_item.subcategory_name, session)
+            sub_name = get_translated(refund_item.subcategory_name, subcat.name_translations if subcat else None)
             if refund_item.telegram_username:
                 kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "refund_by_username").format(
                     telegram_username=refund_item.telegram_username,
                     total_price=refund_item.total_price,
-                    subcategory=refund_item.subcategory_name,
+                    subcategory=sub_name,
                     currency_sym=Localizator.get_currency_symbol()),
                     callback_data=callback)
             else:
                 kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "refund_by_tgid").format(
                     telegram_id=refund_item.telegram_id,
                     total_price=refund_item.total_price,
-                    subcategory=refund_item.subcategory_name,
+                    subcategory=sub_name,
                     currency_sym=Localizator.get_currency_symbol()),
                     callback_data=callback)
         kb_builder.adjust(1)
@@ -299,18 +302,20 @@ class AdminService:
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
                           callback_data=UserManagementCallback.create(0))
         refund_data = await BuyRepository.get_refund_data_single(unpacked_cb.buy_id, session)
+        subcat = await SubcategoryRepository.get_by_name(refund_data.subcategory_name, session)
+        sub_name = get_translated(refund_data.subcategory_name, subcat.name_translations if subcat else None)
         if refund_data.telegram_username:
             return Localizator.get_text(BotEntity.ADMIN, "refund_confirmation_by_username").format(
                 telegram_username=refund_data.telegram_username,
                 quantity=refund_data.quantity,
-                subcategory=refund_data.subcategory_name,
+                subcategory=sub_name,
                 total_price=refund_data.total_price,
                 currency_sym=Localizator.get_currency_symbol()), kb_builder
         else:
             return Localizator.get_text(BotEntity.ADMIN, "refund_confirmation_by_tgid").format(
                 telegram_id=refund_data.telegram_id,
                 quantity=refund_data.quantity,
-                subcategory=refund_data.subcategory_name,
+                subcategory=sub_name,
                 total_price=refund_data.total_price,
                 currency_sym=Localizator.get_currency_symbol()), kb_builder
 

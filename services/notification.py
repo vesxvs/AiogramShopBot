@@ -18,6 +18,7 @@ from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from utils.localizator import Localizator
+from utils.translation_helper import get_translated
 
 
 class NotificationService:
@@ -85,16 +86,16 @@ class NotificationService:
                     username=user.telegram_username,
                     total_price=cart_item_total,
                     quantity=item.quantity,
-                    category_name=category.name,
-                    subcategory_name=subcategory.name,
+                    category_name=get_translated(category.name, category.name_translations),
+                    subcategory_name=get_translated(subcategory.name, subcategory.name_translations),
                     currency_sym=Localizator.get_currency_symbol()) + "\n"
             else:
                 message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_username").format(
                     telegram_id=user.telegram_id,
                     total_price=cart_item_total,
                     quantity=item.quantity,
-                    category_name=category.name,
-                    subcategory_name=subcategory.name,
+                    category_name=get_translated(category.name, category.name_translations),
+                    subcategory_name=get_translated(subcategory.name, subcategory.name_translations),
                     currency_sym=Localizator.get_currency_symbol()) + "\n"
         message += Localizator.get_text(BotEntity.USER, "cart_grand_total_string").format(
             cart_grand_total=cart_grand_total, currency_sym=Localizator.get_currency_symbol())

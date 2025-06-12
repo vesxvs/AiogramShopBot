@@ -30,10 +30,17 @@ class ItemService:
             items = load(file)
             items_list = []
             for item in items:
-                category = await CategoryRepository.get_or_create(item['category'], session)
-                subcategory = await SubcategoryRepository.get_or_create(item['subcategory'], session)
-                item.pop('category')
-                item.pop('subcategory')
+                category_data = item.pop('category')
+                subcategory_data = item.pop('subcategory')
+                category = await CategoryRepository.get_or_create(category_data, session)
+                subcategory = await SubcategoryRepository.get_or_create(subcategory_data, session)
+                description = item.get('description')
+                description_translations = {}
+                if isinstance(description, dict):
+                    description_translations = {k: v for k, v in description.items() if k != 'en'}
+                    description = description.get('en')
+                item['description'] = description
+                item['description_translations'] = description_translations
                 items_list.append(ItemDTO(
                     category_id=category.id,
                     subcategory_id=subcategory.id,
@@ -47,14 +54,30 @@ class ItemService:
             lines = file.readlines()
             items_list = []
             for line in lines:
-                category_name, subcategory_name, description, price, private_data = line.split(';')
-                category = await CategoryRepository.get_or_create(category_name, session)
-                subcategory = await SubcategoryRepository.get_or_create(subcategory_name, session)
+                category_field, subcategory_field, description_field, price, private_data = line.strip().split(';')
+
+                def parse_field(field: str) -> tuple[str, dict]:
+                    parts = field.split('|')
+                    base = parts[0]
+                    translations = {}
+                    for part in parts[1:]:
+                        if ':' in part:
+                            lang, val = part.split(':', 1)
+                            translations[lang] = val
+                    return base, translations
+
+                cat_en, cat_trans = parse_field(category_field)
+                sub_en, sub_trans = parse_field(subcategory_field)
+                desc_en, desc_trans = parse_field(description_field)
+
+                category = await CategoryRepository.get_or_create({'en': cat_en, **cat_trans}, session)
+                subcategory = await SubcategoryRepository.get_or_create({'en': sub_en, **sub_trans}, session)
                 items_list.append(ItemDTO(
                     category_id=category.id,
                     subcategory_id=subcategory.id,
                     price=float(price),
-                    description=description,
+                    description=desc_en,
+                    description_translations=desc_trans,
                     private_data=private_data
                 ))
             return items_list
