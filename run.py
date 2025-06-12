@@ -154,10 +154,11 @@ users_routers.message.middleware(throttling_middleware)
 users_routers.callback_query.middleware(throttling_middleware)
 main_router.include_router(admin_router)
 main_router.include_routers(users_routers)
-main_router.message.middleware(DBSessionMiddleware())
-main_router.callback_query.middleware(DBSessionMiddleware())
-main_router.message.middleware(LocalizationMiddleware())
-main_router.callback_query.middleware(LocalizationMiddleware())
+
+dp.message.outer_middleware(DBSessionMiddleware())
+dp.callback_query.outer_middleware(DBSessionMiddleware())
+dp.message.outer_middleware(LocalizationMiddleware())
+dp.callback_query.outer_middleware(LocalizationMiddleware())
 
 if __name__ == '__main__':
     if config.MULTIBOT:
