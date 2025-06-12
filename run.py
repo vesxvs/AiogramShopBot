@@ -27,12 +27,29 @@ from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
 from db import session_commit
-from callbacks import LanguageCallback
 from callbacks import LanguageCallback, CurrencyCallback
 from enums.currency import Currency
 
 logging.basicConfig(level=logging.INFO)
 main_router = Router()
+
+LANGUAGE_NAMES = {
+    "en": "English",
+    "de": "Deutsch",
+    "pl": "Polski",
+    "ru": "Русский",
+    "uk": "Українська",
+    "be": "Беларуская",
+}
+
+LANGUAGE_FLAGS = {
+    "en": "🇬🇧",
+    "de": "🇩🇪",
+    "pl": "🇵🇱",
+    "ru": "🇷🇺",
+    "uk": "🇺🇦",
+    "be": "🇧🇾",
+}
 
 
 def get_currency_keyboard() -> types.ReplyKeyboardMarkup:
@@ -67,7 +84,10 @@ async def start(message: types.message):
     kb_builder = InlineKeyboardBuilder()
     for lang_file in Path("l10n").glob("*.json"):
         code = lang_file.stem
-        kb_builder.button(text=code, callback_data=LanguageCallback.create(code).pack())
+        name = LANGUAGE_NAMES.get(code, code)
+        flag = LANGUAGE_FLAGS.get(code, "")
+        button_text = f"{flag} {name}".strip()
+        kb_builder.button(text=button_text, callback_data=LanguageCallback.create(code).pack())
     await message.answer(Localizator.get_text(BotEntity.COMMON, "choose_language"), reply_markup=kb_builder.as_markup())
 
 
